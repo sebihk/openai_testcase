@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Add your question   {% endblock %}</h1>    <h3>  Feature:</h3>
+    <form method="post">
+    
+		<table> <tr>
+		  <th> <p>data quality error: <br>
+		   provide structure feedback base on the error message that user encounter vi dml.</p></th>
+		</tr>		
+		<tr>
+		  <th> generate sql via NLP: <br>generate sql statemement base on the schema desinition (loandepo,company,currency,CONTRACT_TYPES,FAMILY) 
+		<br>  whole schema is expensive for testing.</th>
+		</tr> 
+		</table>
+		<br>
+		  <label for="cars">Choose a feature:</label>
+		<select   id="title" name="title"> 
+    <option value="dql">data quality error</option> 
+    <option value="nlpsql">generate sql via NLP</option> 
+	
+</select>
+      
+       
+        <label for="content">Question Content</label>
+        <br>
+        <textarea name="content"
+                  placeholder="Sample: why account table hit CHK_ACCOUNT_052 error?"
+                  rows="15"
+                  cols="60"
+                  >{{ request.form['content'] }}</textarea>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}

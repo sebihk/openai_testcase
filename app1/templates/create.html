@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Add your question   {% endblock %}</h1>
+    <form method="post">
+        <label for="title">username</label>
+        <br>
+        <input type="text" name="title"
+               placeholder="product code"
+               value="{{ request.form['title'] }}"></input>
+        <br>
+
+        <label for="content">Question Content</label>
+        <br>
+        <textarea name="content"
+                  placeholder="Sample: why account table hit CHK_ACCOUNT_052 error?"
+                  rows="15"
+                  cols="60"
+                  >{{ request.form['content'] }}</textarea>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}

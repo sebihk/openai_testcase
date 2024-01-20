@@ -1,0 +1,71 @@
+ 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> 
+    <title>WebAPI</title>
+</head>
+<body>
+    <h1>DATA : API</h1>
+    <h2>API : GET</h2>
+    <button id='btnGet'>GET</button>
+    <hr>
+    <h2>API : POST</h2>
+   
+    <p>APP_REMARK :
+        <input id="question" name="question" type="text" />
+    </p>
+    <button id="btnPost">POST</button>
+    <hr>
+    <h3>Console : </h3>
+    <div id="console"></div>
+    <script>
+        $(function () {
+            var $btnGet = $('#btnGet');
+            var $console = $('#console');
+            var $btnPost = $('#btnPost');
+   
+            var $edtquestion = $('#question');
+            $btnGet.off('click').on('click', function () {
+                $.ajax({
+                    url: '/access',
+                    data: {},
+                    type: 'GET',
+                    success: function (data) {
+                        $console.text("");
+                   
+                        $console.append("data[question] : " + data.appInfo.question + "---");
+ 
+                        $edtquestion.val(data.appInfo.question);
+
+                    },
+                    error: function (xhr) {
+                        alert('Ajax request 發生錯誤');
+                    }
+                });
+            })
+            $btnPost.off('click').on('click',function(){
+                $.ajax({
+                    url: '/access',
+                    data: { 
+                        "question" : $edtquestion.val(),
+
+                    },
+                    type: 'POST',
+                    success: function (data) {
+                        $console.text("result = ");
+                        $console.append(data.result);
+                    },
+                    error: function (xhr) {
+                        alert('Ajax request 發生錯誤');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
