@@ -4,7 +4,7 @@ from openai import OpenAI
 import  oracledb
 import json
 import os 
-#client = OpenAI(api_key='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')
+
 client= OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 #app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 

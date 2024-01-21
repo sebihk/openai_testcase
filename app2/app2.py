@@ -10,8 +10,7 @@ import sys
 from flask import Flask, render_template, request, url_for, flash, redirect
 sys.path.append('./')
 from  dql import *
-
-#client = OpenAI(api_key='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')
+ 
 client= OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 #app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
