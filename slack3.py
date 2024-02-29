@@ -40,10 +40,40 @@ bot_user_id = auth_test["user_id"]
 print(bot_user_id)
 kb_model="model3"
 for i in range(6000):
+    try:
+        print("speech to text")
+		# use the microphone as source for input.
+        with sr.Microphone() as source2:
+			
+			# wait for a second to let the recognizer
+			# adjust the energy threshold based on
+			# the surrounding noise level 
+            r.adjust_for_ambient_noise(source2,duration=0.5)
+			
+			#listens for the user's input 
+            audio2 = r.listen(source2 )
+			
+			# Using google to recognize audio
+            MyText = r.recognize_google(audio2)
+            upptext=MyText.upper()
+            print(upptext)
+            respond=client.chat_postMessage(channel=test_channel_name, text=" " +upptext)
+            ai_feedback=dql.run_conversation_dql2(upptext) 
+            if type(ai_feedback) is type(None):
+                    print("no feedback")
+            else:
+                response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
+			 
+    except sr.RequestError as e:
+        print("Could not request results; {0}".format(e))
+		
+    except sr.UnknownValueError:
+        print("unknown error occurred")
+    
     conversation_history=  client.conversations_history(channel=test_channel_id,limit=100,oldest=ts)
     #print(conversation_history)
     result = conversation_history["messages"] 
-   
+    
     if len(result)>0:
        for rec in  result:
         if ts<float(rec["ts"]) and ( "client_msg_id" in rec.keys() ):
@@ -89,44 +119,14 @@ for i in range(6000):
             elif len(message)>3:
                 
                 ai_feedback=dql.run_conversation_dql2(message)
-                time.sleep(1)
+                #time.sleep(1)
                 if type(ai_feedback) is type(None)  :
                     response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you?")
                 else:
                     response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
             elif len(message)<3:
                 response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you?")
-        else: #speech to text as input
-            	try:
-            		
-            		# use the microphone as source for input.
-            		with sr.Microphone() as source2:
-            			
-            			# wait for a second to let the recognizer
-            			# adjust the energy threshold based on
-            			# the surrounding noise level 
-            			r.adjust_for_ambient_noise(source2,duration=2)
-            			
-            			#listens for the user's input 
-            			audio2 = r.listen(source2)
-            			
-            			# Using google to recognize audio
-            			MyText = r.recognize_google(audio2)
-            			text=MyText.upper()
-            			print(text)
-            			respond=client.chat_postMessage(channel=test_channel_name, text=" " +text)
-            			ai_feedback=dql.run_conversation_dql2(text) 
-            			if type(ai_feedback) is type(None):
-            			  print("no feedback")
-            			else:
-            			  response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
-            			 
-            	except sr.RequestError as e:
-            		print("Could not request results; {0}".format(e))
-            		
-            	except sr.UnknownValueError:
-            		print("unknown error occurred")
-
+      
            
     time.sleep(2)
 
