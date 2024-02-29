@@ -12,10 +12,16 @@ import datetime
 import requests
 import io
 
+import speech_recognition as sr 
 from ydata_profiling import ProfileReport, compare
 
 test_channel_id="C06GRCN1FA8"
-test_channel_name="help-ers-assistant"
+test_channel_name="help-ers-assistant" 
+token = os.environ.get("SLACK_MCO_TEST_TOKEN")
+
+
+ 
+r = sr.Recognizer() 
 ## get current time stamp
 now = datetime.datetime.now()
 ts=int(now.timestamp())
@@ -24,20 +30,20 @@ print(ts)
 # Add functionality here later
 # @app.event("app_home_opened") etc.
 conversation_history = []
-token=token= os.environ.get("SLACK_MCO_TEST_TOKEN")
-client = WebClient(token= os.environ.get("SLACK_MCO_TEST_TOKEN"))
-conversation_history=  client.conversations_history(channel=test_channel_id,limit=100,oldest=ts)
+
+client = WebClient(token=token)
+conversation_history=  client.conversations_history(channel=test_channel_id,limit=10,oldest=ts)
 result = conversation_history["messages"]
 a2=conversation_history["messages"]
 auth_test = client.auth_test()
 bot_user_id = auth_test["user_id"]
-
+print(bot_user_id)
 kb_model="model3"
 for i in range(6000):
     conversation_history=  client.conversations_history(channel=test_channel_id,limit=100,oldest=ts)
     #print(conversation_history)
     result = conversation_history["messages"] 
-    
+   
     if len(result)>0:
        for rec in  result:
         if ts<float(rec["ts"]) and ( "client_msg_id" in rec.keys() ):
@@ -88,6 +94,40 @@ for i in range(6000):
                     response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you?")
                 else:
                     response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
+            elif len(message)<3:
+                response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you?")
+        else: #speech to text as input
+            	try:
+            		
+            		# use the microphone as source for input.
+            		with sr.Microphone() as source2:
+            			
+            			# wait for a second to let the recognizer
+            			# adjust the energy threshold based on
+            			# the surrounding noise level 
+            			r.adjust_for_ambient_noise(source2,duration=2)
+            			
+            			#listens for the user's input 
+            			audio2 = r.listen(source2)
+            			
+            			# Using google to recognize audio
+            			MyText = r.recognize_google(audio2)
+            			text=MyText.upper()
+            			print(text)
+            			respond=client.chat_postMessage(channel=test_channel_name, text=" " +text)
+            			ai_feedback=dql.run_conversation_dql2(text) 
+            			if type(ai_feedback) is type(None):
+            			  print("no feedback")
+            			else:
+            			  response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
+            			 
+            	except sr.RequestError as e:
+            		print("Could not request results; {0}".format(e))
+            		
+            	except sr.UnknownValueError:
+            		print("unknown error occurred")
+
+           
     time.sleep(2)
 
  
