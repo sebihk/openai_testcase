@@ -4,104 +4,95 @@ from openai import OpenAI
 import  oracledb
 import json
 import os  
+import chromadb 
+import pandas as pd 
 client= OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 #app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
- 
+#gpt_model= "gpt-3.5-turbo-0125" 
 
-def get_ora_error(ora_err_code ):
-    """Get the error description for ora error code"""
-    print("calling get_ora_error to check " +ora_err_code.lower())
-    connection =  oracledb.connect(user="rco", password="a",host="ahd-wxapancb601", port=1521, service_name="orapdb193")
+gpt_model= "gpt-4-1106-preview" #"gpt-4-turbo-preview"
+
+kb_model="model3"
+
+
+def check_knowledge(question ):
+    #r=vdb.get_knowledge(question,"model3")
+    result_number=10
+    chromadb.PersistentClient(path="c:/ma/openai/db/")
+    c = chromadb.HttpClient(host='localhost', port=8000)
+    collection = c.get_or_create_collection(kb_model)
+    r = collection.query(
+        query_texts=[ question.lower()],
+        n_results=result_number#,
+        # where={"kk": "notion"}, # optional filter
+        # where_document={"$contains":"search_string"}  # optional filter
+    ) 
     
-    cursor = connection.cursor()
-    res=[]
-    ##res.append({"ora_err_code": ora_err_code.lower(), "desc":  ''}) 
-    #for result in cursor.execute("select constraint_name||':'||decode(source ,null,table_name||'('||child_columns||') do not exists in parent table '||parent_table_name||'('||parent_columns||')'  , source)  source from table_constraints where constraint_name like '%'||:cs_name ||'%'" ,cs_name=ora_err_code.upper()):
-    #    res.append( {"ora_err_code": ora_err_code, "desc":  result }) 
-    res.append( {"ora_err_code": ora_err_code, "desc": str(cursor.execute("select constraint_name||':'||decode(source ,null,table_name||'('||child_columns||') do not exists in parent table '||parent_table_name||'('||parent_columns||')'  , source)  source from table_constraints where constraint_name like '%'||:cs_name ||'%'" ,cs_name=ora_err_code.upper()).fetchall())}) 
-    
-    print(json.dumps(res) )
-    return json.dumps(res) 
-    if "ora-00001" in ora_err_code.lower():
-        return json.dumps({"ora_err_code": "ora-00001", "desc": "unique constraint (schema_name.constraint_name) violated"})
-    elif "ora-00060" in ora_err_code.lower():
-        return json.dumps({"ora_err_code": "ora-00060", "desc": "deadlock detected while waiting for resource"})
-    elif "ora-01555" in ora_err_code.lower(): 
-        return json.dumps({"ora_err_code": "ora-01555", "desc": "oracle snapshot too old, need to increase undo"})
-    elif "ora-00600" in ora_err_code.lower(): 
-        return json.dumps({"ora_err_code": "ora-00600", "desc": "oracle internal error, Please check metalink with your oracle support id "})
-    else:
-        return json.dumps({"ora_err_code": ora_err_code, "desc": "unknown error"})
+    content=r['documents'][0]
+    docname=r['ids'][0]
+    dist=r['distances'][0]
+
+    data = pd.DataFrame({ 
+        "docname": docname, 
+        "content": content
+      #  "distances": dist 
+    } )
+    return data 
+    #return json.dumps(dict)
 
 
-
-def run_conversation(question):
-    # Step 1: send the conversation and available functions to the model
-    messages = []
-    messages.append({"role": "system", "content": "Answer user questions by generating SQL queries against RFO table_constraints"})
-    messages.append({"role": "user", "content": question})
-    
-    tools = [
+def get_prompt(question,knowledge):
+    #print ("knowledge:" )
+    #print (knowledge)
+    return [
+        {"role": "system", "content": "You are a helpful product assistant familar different financial instruments work in the market and Moodys system.\
+         Please organize answer for the question base on the Context. \
+         Context: {"+knowledge+"}\n\n"},
         {
-            "type": "function",
-            "function": {
-                "name": "get_ora_error",
-                "description": "Get the error description for given error code",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "ora_err_code": {
-                            "type": "string",
-                            "description": "error code ",
-                        },
-                        "desc":  {
-                            "type": "string",
-                            "description": "error code description",
-                        },
-                    },
-                    "required": ["ora_err_code"],
-                },
-            },
-        }
+        "role": "user",
+        "content": f"""Answer the following Question based on the Context only. Only answer from the Context. If the context didn't have enough infomrmation, say 'I don't know the answer'.
+    Question: {question}\n\n
+        Answer:\n""",
+        },
     ]
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo-1106",
+        # "content": f""" Try your best to answer the following Question based on the context only. please limit the respond within 600 words'.
+
+ 
+ 
+def api_call(messages, model):
+    return client.chat.completions.create(
+        model=model,
         messages=messages,
-        tools=tools,
-        tool_choice="auto",  # auto is default, but we'll be explicit
+        #stop=["\n\n"],
+        max_tokens=1500,
+        temperature=0.5
     )
-    response_message = response.choices[0].message
-    tool_calls = response_message.tool_calls
-    # Step 2: check if the model wanted to call a function
-    if tool_calls:
-        # Step 3: call the function
-        # Note: the JSON response may not always be valid; be sure to handle errors
-        available_functions = {
-            "get_ora_error": get_ora_error,
-        }  # only one function in this example, but you can have multiple
-        messages.append(response_message)  # extend conversation with assistant's reply
-        # Step 4: send the info for each function call and function response to the model
-        for tool_call in tool_calls:
-            function_name = tool_call.function.name
-            function_to_call = available_functions[function_name]
-            function_args = json.loads(tool_call.function.arguments)
-            function_response = function_to_call(
-                ora_err_code=function_args.get("ora_err_code") 
-            )
-            messages.append(
-                {
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_response,
-                }
-            )  # extend conversation with function response
-        second_response = client.chat.completions.create(
-            model="gpt-3.5-turbo-1106",
-            messages=messages,
-        )  # get a new response from the model where it can see the function response
-        print(" \n " )  
-        print(second_response )
+
+def run_conversation_dql2(question):
+    # Step 1: send the conversation and available functions to the model
+  
+        message=check_knowledge(question)
+        print("a22:" ) 
+        #kg=get_prompt(question,message.to_json(orient='table',index=False))
+        kg=get_prompt(question,message.to_csv(index=False))
+          
+        print(kg)
+     
+        second_response = api_call(kg, gpt_model) 
+        
+        print("a25:")
+        print(second_response.usage)
         return second_response.choices[0].message.content
-    
+ 
+#aa=run_conversation_dql2("how to do data mapping and loading for ZM/ALM?")
+#print(aa)
+question="What are the main new features in RFO 7.2.2?"
+
+c=check_knowledge(question)
+aa=run_conversation_dql2(question)
+print(aa)
+
+
+#aa=check_knowledge("how to create process profile?" )
+#print(aa)

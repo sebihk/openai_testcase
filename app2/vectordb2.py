@@ -33,66 +33,7 @@ kb_model="model3"
 #ef1 = SentenceTransformerEmbeddingFunction("sentence-transformers/all-MiniLM-L6-v2")
 #client.delete_collection("test")    
 #collection = client.get_or_create_collection("test",embedding_function=ef1)
-"""
-id=1
-for rec in (all_splits):
-    #print(rec)
-    
-    
-    if rec.page_content.count('.')>500 :
-        print("-skip")
-    else:
-        #print(ef1(rec.page_content))
-        collection.add(
-            documents=rec.page_content, 
-            metadatas=[{"type": 'rfo document', "page":rec.metadata["page"]}],
-            ids=[str(id )]  # unique for each docui
-            )   
-    print("add id "+str(rec.metadata["page"])+"-"+str(id))
-    id=id+1
-"""
 
-
-# setup Chroma in-memory, for easy prototyping. Can add persistence easily!
-#chromadb(persist_directory="c:/ma/openai/db/")
-#client = chromadb.Client()
-
-
-
-# Create collection. get_collection, get_or_create_collection, delete_collection also available!
-# collection = client.create_collection("all-my-documents")
-
-# collection=get_knowledge()
-
-# for rec in get_knowledge():
-
-# Add docs to the collection. Can also update and delete. Row-based API coming soon!
-    # print()
-"""
-    collection.add(
-        # we handle tokenization, embedding, and indexing automatically. You can skip that and add your own embeddings as well
-        documents=["This is document1", "This is document2"],
-        metadatas=[{"source": "notion"}, {
-            "source": "google-docs"}], # filter on these!
-        ids=["doc1", "doc2"], # unique for each doc
-    )
-
-collection.add(
-    # we handle tokenization, embedding, and indexing automatically. You can skip that and add your own embeddings as well
-    documents=["hello world2", "This is document2"],
-    metadatas=[{"kk": "notion"}, {"kk": "google-docs"}], # filter on these!
-    ids=["doc3", "doc4"], # unique for each doc
-)
-# Query/search 2 most similar results. You can also .get by id
-results = collection.query(
-    query_texts=[ " document2"],
-    n_results=5 #,
-    # where={"kk": "notion"}, # optional filter
-    # where_document={"$contains":"search_string"}  # optional filter
-)
-
-print(results)
-"""
 def findAllFile(base,extention):
     file_list=[]
     for root, ds, fs in os.walk(base):
@@ -138,7 +79,7 @@ def read_pdf(full_pathname):
     #"C:/ma/openai/upload/7.3.2_RiskConfidence_User_Guide.pdf")
     PDF_data = loader.load()  
     
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=500)
     all_splits = text_splitter.split_documents(PDF_data)
     return all_splits
  
@@ -158,10 +99,10 @@ def add_document(pdf_documents,file_name,model=kb_model):
         if rec.page_content.count('.')>500 :
             print("-skip")
         else:
-            
+            print(rec.page_content.lower())
             print("adding "+str(rec.metadata["page"]))
-            collection.add(
-                documents=rec.page_content,
+            collection.upsert(
+                documents=file_name+": "+rec.page_content.lower().replace('\n', ' '),
            # filter on these!
                metadatas=[{"type": 'rfo document', "name": file_name, "section":rec.metadata["page"]}],
                ids=[file_name+'-' + str(id) ]  # unique for each docui
@@ -207,16 +148,5 @@ for rec in a:
     print(rec)
     add_txt(rec)
     """
-c = chromadb.HttpClient(host='localhost', port=8000)
-chromadb.PersistentClient(path="c:/ma/openai/db/")
-collection = c.get_or_create_collection("maui_model")
-results = collection.query(
-    query_texts=[ "curityContextPersistenceFilter"],
-    n_results=10#,
-    # where={"kk": "notion"}, # optional filter
-    # where_document={"$contains":"search_string"}  # optional filter
-)
-
-for rec in results["documents"]:
-    print(rec)
-    print("\n")
+doc=read_pdf("C:/Users/WuJia/OneDrive - moodys.com/Documents/rfo_document/7.2.2/7.2.2 - RiskFoundation Release Notes.pdf"  )
+add_document(doc,"7.2.2 - RiskFoundation Release Notes.pdf",kb_model)
