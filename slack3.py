@@ -6,6 +6,7 @@ import time
 from slack_sdk import  WebClient
 import app2.dql as dql
 import app2.vectordb2 as vdb1
+import app2.etl_test_gpt as adm
 # Initialize your app with your bot token and signing secret
 import pandas as pd
 import datetime 
@@ -40,36 +41,7 @@ bot_user_id = auth_test["user_id"]
 print(bot_user_id)
 kb_model="model3"
 for i in range(6000):
-    try:
-        print("speech to text")
-		# use the microphone as source for input.
-        with sr.Microphone() as source2:
-			
-			# wait for a second to let the recognizer
-			# adjust the energy threshold based on
-			# the surrounding noise level 
-            r.adjust_for_ambient_noise(source2,duration=0.5)
-			
-			#listens for the user's input 
-            audio2 = r.listen(source2 )
-			
-			# Using google to recognize audio
-            MyText = r.recognize_google(audio2)
-            upptext=MyText.upper()
-            print(upptext)
-            respond=client.chat_postMessage(channel=test_channel_name, text=" " +upptext)
-            ai_feedback=dql.run_conversation_dql2(upptext) 
-            if type(ai_feedback) is type(None):
-                    print("no feedback")
-            else:
-                response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
-			 
-    except sr.RequestError as e:
-        print("Could not request results; {0}".format(e))
-		
-    except sr.UnknownValueError:
-        print("unknown error occurred")
-    
+
     conversation_history=  client.conversations_history(channel=test_channel_id,limit=100,oldest=ts)
     #print(conversation_history)
     result = conversation_history["messages"] 
@@ -106,6 +78,36 @@ for i in range(6000):
                        text=f"RFO assistant :Here is the file: {file_url}",
                    )
                     print("send profile")
+                elif message.upper()=="DOC LIST" : 
+                    flist=vdb1.findAllFile("C:/ma/openai/upload/rfo","pdf")
+                    li=[]
+                    for rec in flist:
+                       li.append(os.path.basename(rec))     
+                       print(rec)
+                    df= pd.DataFrame(li)
+                    print(li)
+                    response = client.chat_postMessage(
+                       channel=test_channel_name,
+                       text=df.to_markdown(), 
+                        mrkdwn=True
+                   )
+                    
+                elif message.upper()=="DATA MAPPING" :
+                    full_path="c:/ma/openai/upload/"+rec_file_name
+                    data=requests.get(url, headers={'Authorization': 'Bearer %s' % token}).content
+                    with open(full_path, "wb") as file:
+                        file.write(data)
+                    rec=adm.data_mapping(full_path)
+                    rec.to_excel("C:/ma/openai/upload/"+rec_file_name+"_recommend_mapping.xlsx",sheet=rec_file_name)
+                    new_file=client.files_upload(file=open("C:/ma/openai/upload/"+rec_file_name+"_recommend_mapping.xlsx", "rb"), channel=test_channel_name)
+                    
+                    files = client.files_list(user=bot_user_id)
+                    file_url = new_file.get("file").get("permalink")
+                    response = client.chat_postMessage(
+                       channel=test_channel_name,
+                       text=f"RFO assistant :Here is the file: {file_url}",
+                   )
+                    print("send mapping")
                     
                 elif message.upper()=="LEARN" :
                     full_path="c:/ma/openai/upload/"+rec_file_name
@@ -125,7 +127,7 @@ for i in range(6000):
                 else:
                     response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
             elif len(message)<3:
-                response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you?")
+                response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you today?")
       
            
     time.sleep(2)
