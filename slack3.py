@@ -123,11 +123,11 @@ for i in range(6000):
                 ai_feedback=dql.run_conversation_dql2(message)
                 #time.sleep(1)
                 if type(ai_feedback) is type(None)  :
-                    response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you?")
+                    response = client.chat_postMessage(channel=test_channel_name, text=" What can I do for you?")
                 else:
                     response = client.chat_postMessage(channel=test_channel_name, text=" "+ai_feedback)
             elif len(message)<3:
-                response = client.chat_postMessage(channel=test_channel_name, text=" What can i do for you today?")
+                response = client.chat_postMessage(channel=test_channel_name, text=" What can I do for you today?")
       
            
     time.sleep(2)
